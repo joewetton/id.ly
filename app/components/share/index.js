@@ -15,6 +15,8 @@ import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 import * as ReduxActions from '../../actions'; //Import your actions
 import {Actions} from 'react-native-router-flux';
+import deviceInfo from 'react-native-device-info';
+
 
 // SHARE
 // FUNCTION(S): This componenet at the moment will display a JSON card object in QR
@@ -58,16 +60,19 @@ class Share extends Component {
 
     render() {
         // call packageCard() function to get card object ready for QR display
-        var packageCard = this.packageCard();
-        console.log(packageCard)
+        // var packageCard = this.packageCard();
+        // console.log(packageCard)
+        let uuid = deviceInfo.getUniqueID();
+
         return (
             // This is where the actual QR is displayed
             <View style={styles.container}>
+                <Text> unique id: {uuid} </Text>
                 <Text style={styles.title}>
                     Have the other user scan with QR Scanner
                 </Text>
                 <QRCode
-                    value={packageCard}
+                    value={uuid}
                     size={350}
                     bgColor='black'
                     fgColor='white'

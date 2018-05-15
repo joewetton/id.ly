@@ -82,7 +82,8 @@ class Scan extends Component {
             scanning: false,
             moveAnim: new Animated.Value(0),
             isAuthorized: false,
-            isAuthorizationChecked: false
+            isAuthorizationChecked: false,
+            peerId: ''
         };
         this.title = 'QRScan';
     }
@@ -142,10 +143,14 @@ class Scan extends Component {
             Vibration.vibrate();
             this._setScanning(true);
             this.props.ScanResult(e);
+            console.log('scan: peer id ' + e.data);
+            this.setState({peerId: e.data});
+            /*
             var card = JSON.parse(e['data']);
             this.props.addCard(card);
             console.log(card)
             Actions.pop();
+            */
             if(this.props.reactivate) {
                 setTimeout(() => (this._setScanning(false)), this.props)
             }
@@ -194,6 +199,7 @@ class Scan extends Component {
                                 styles.border,
                                 {transform: [{translateY: this.state.moveAnim}]}]}/>
                             <Text style={styles.rectangleText}>Scan the QRCode</Text>
+                            <Text style={styles.rectangleText}>Scanned ID: {this.state.peerId}</Text>
                         </View>
                     </Camera>
                 </View>
