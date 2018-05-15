@@ -16,7 +16,8 @@ import { connect } from 'react-redux';
 import * as ReduxActions from '../../actions'; //Import your actions
 import {Actions} from 'react-native-router-flux';
 import deviceInfo from 'react-native-device-info';
-
+//import BluetoothCP from 'react-native-bluetooth-cross-platform';
+let BluetoothCP = require("react-native-bluetooth-cross-platform")
 
 // SHARE
 // FUNCTION(S): This componenet at the moment will display a JSON card object in QR
@@ -33,10 +34,47 @@ class Share extends Component {
         super(props);
         this.state = {};
         this.packageCard = this.packageCard.bind(this);
+        this.connectedListener = this.connectedListener.bind(this);
     }
 
     componentDidMount() {
         this.props.getCards();
+        
+        /* assign listeners so they can be unsubscribed on unmount */
+        this.listener1 = BluetoothCP.addPeerDetectedListener((msg) => console.log(msg));
+        this.listener2 = BluetoothCP.addPeerLostListener((msg) => console.log(msg));
+        this.listener3 = BluetoothCP.addReceivedMessageListener((msg) => console.log(msg));
+        this.listener4 = BluetoothCP.addInviteListener((r) => BluetoothCP.acceptInvitation(r.id));
+        this.listener5 = BluetoothCP.addConnectedListener(this.connectedListener);
+
+        console.log('share: mounted');
+        console.log('share: advertising');
+        BluetoothCP.advertise("BT");
+    }
+    
+    inviteListener(peer) {
+        /* code that runs when you are invited */
+        console.log('addInviteListener', peer);
+        console.log('accepting invitation');
+        BluetoothCP.acceptInvitation(peer.id);
+    }
+
+    connectedListener(peer) {
+        /* code that runs when you are connected */
+        console.log('addConnectedListener', peer);
+        console.log('sending message to ' + peer.id);
+        BluetoothCP.sendMessage('hello ' + peer.id + ' this is ' + deviceInfo.getUniqueID(), peer.id);
+        //BluetoothCP.disconnectFromPeer(peer.id);
+        //Actions.pop();
+    }
+
+    componentWillUnmount() {
+        this.listener1.remove();
+        this.listener2.remove();
+        this.listener3.remove();
+        this.listener4.remove();
+        this.listener5.remove();
+        console.log('unmounting');
     }
 
     packageCard() {

@@ -18,6 +18,9 @@ import * as ReduxActions from '../../actions';
 import { Actions } from 'react-native-router-flux';
 import {RNCamera as Camera} from 'react-native-camera';
 import Permissions from 'react-native-permissions';
+//import BluetoothCP from 'react-native-bluetooth-cross-platform';
+let BluetoothCP = require("react-native-bluetooth-cross-platform")
+
 
 const PERMISSION_AUTHORIZED = 'authorized';
 const CAMERA_PERMISSION = 'camera';
@@ -29,6 +32,8 @@ class Scan extends Component {
         this.setState({ hasCameraPermission: status === 'granted' });
     }
     */
+
+
     static propTypes = {
         ScanResult: PropTypes.func.isRequired,
         reactivate: PropTypes.bool,
@@ -83,9 +88,13 @@ class Scan extends Component {
             moveAnim: new Animated.Value(0),
             isAuthorized: false,
             isAuthorizationChecked: false,
-            peerId: ''
+            peerId: '',
+            btMessage: ''
         };
         this.title = 'QRScan';
+
+        this.peerDetected = this.peerDetected.bind(this);
+        this.recievedMessage = this.recievedMessage.bind(this);
     }
 
     componentDidMount() {
@@ -112,6 +121,43 @@ class Scan extends Component {
         else {
             this.setState({ isAuthorized: true, isAuthorizationChecked: true })
         }
+
+        /* bluetooth: assign listeners for so they can be unsubscribed on unmount */
+        this.listener1 = BluetoothCP.addPeerDetectedListener(this.peerDetected);
+        this.listener2 = BluetoothCP.addPeerLostListener((msg) => console.log(msg));
+        this.listener3 = BluetoothCP.addReceivedMessageListener(this.recievedMessage);
+        this.listener4 = BluetoothCP.addInviteListener((msg) => console.log(msg));
+        this.listener5 = BluetoothCP.addConnectedListener((msg) => console.log(msg));
+        console.log('scan: mounted');
+    }
+
+    componentWillUnmount() {
+        this.listener1.remove()
+        this.listener2.remove()
+        this.listener3.remove()
+        this.listener4.remove()
+        this.listener5.remove()
+    }
+
+    peerDetected(peer) {
+        /* code that runs when other device runs advertise and becomes detected */
+        console.log('peer detected ' + peer.id);
+        console.log(this.state.peerId);
+        if (peer.id === this.state.peerId) {
+            console.log('found peer sending invitation');
+            BluetoothCP.inviteUser(peer.id);
+        }
+        else {
+            console.log('detected peer that is unknown');
+        }
+    }
+
+    recievedMessage(peer) {
+        /* code that runs when you recieve a message */
+        console.log('addReceivedMessageListener', peer.message)
+        this.setState({btMessage: peer.message});
+        //console.log('message recieved - disconnecting from peer ' + peer.id)
+        //BluetoothCP.disconnectFromPeer(peer.id);
     }
 
     // Make the animated scan bar
@@ -137,6 +183,11 @@ class Scan extends Component {
         this._setScanning(false);
     }
 
+    advertise() {
+        console.log('scan: advertising');
+        BluetoothCP.advertise("BT");
+    }
+
     // Try to read the QRCode
     _handleBarCodeRead(e) {
         if(!this.state.scanning) {
@@ -145,15 +196,18 @@ class Scan extends Component {
             this.props.ScanResult(e);
             console.log('scan: peer id ' + e.data);
             this.setState({peerId: e.data});
+            this.advertise();
+            this._setScanning(true);
             /*
             var card = JSON.parse(e['data']);
             this.props.addCard(card);
             console.log(card)
             Actions.pop();
-            */
+            
             if(this.props.reactivate) {
                 setTimeout(() => (this._setScanning(false)), this.props)
             }
+            */
         }
     }
 
@@ -200,6 +254,7 @@ class Scan extends Component {
                                 {transform: [{translateY: this.state.moveAnim}]}]}/>
                             <Text style={styles.rectangleText}>Scan the QRCode</Text>
                             <Text style={styles.rectangleText}>Scanned ID: {this.state.peerId}</Text>
+                            <Text style={styles.rectangleText}>Message: {this.state.btMessage}</Text>
                         </View>
                     </Camera>
                 </View>
